@@ -1,50 +1,57 @@
 # openMSX ROM file organizer
 
-Scans a folder of loose/unsorted ROM dumps and sorts the ones openMSX
-recognizes into your `systemroms` folder, renamed to the filename openMSX's
-machine/extension configs expect. Anything that doesn't match a known hash
-goes into `systemroms/misc` for manual triage.
+Drop `romsort.py` into a folder containing your loose/unsorted ROM dumps
+(subfolders are fine, it scans recursively) and run it. It downloads the
+machine and extension configs from the [openMSX GitHub repo](https://github.com/openMSX/openMSX),
+uses the SHA1 hashes declared in them to identify each ROM file, and sorts
+matches into a `systemroms` folder it creates right there — renamed to the
+filename openMSX expects, under `systemroms/machines` or
+`systemroms/extensions`. Anything that doesn't match a known hash is moved
+into a `Non-Match` folder instead (keeping its original relative subfolder
+path, so nothing collides or gets lost).
 
 This is only for **system** ROMs (BIOS, sub-ROMs, disk ROMs, cartridge
 firmware, etc. needed to emulate a machine or extension) — not game ROMs.
+
+**This script never touches an existing openMSX installation.** It only
+reads from GitHub and writes inside its own folder. Once you're happy with
+the result, copy the generated `systemroms` folder's contents into your
+real openMSX `share/systemroms`.
 
 ## How it works
 
 openMSX itself matches files in `systemroms` purely by SHA1 content hash —
 the filename is irrelevant to openMSX. The hashes and their canonical
 filenames are declared in `<rom><sha1>...</sha1><filename>...</filename></rom>`
-blocks inside the machine/extension config XML files. This tool reads those
-XML files, hashes every file in your scan folder, and on a match copies (or
-moves) the file into `systemroms/<machines|extensions>/<canonical filename>`
-purely for human-readable organization.
+blocks inside the machine/extension config XML files. This tool downloads
+those files from `share/machines`, `share/extensions`, and `Contrib/cbios`
+(the C-BIOS configs live there instead of `share/machines` in the repo,
+copied into a release's `share/machines` at packaging time) on the openMSX
+GitHub repo, hashes every file in your ROM folder, and on a match
+copies/renames the file into the right spot.
 
-It expects `--systemroms` to be a folder that already contains the config
-XML files inside `machines/` and `extensions/` subfolders (as copied from
-openMSX's own `share/machines` and `share/extensions`) alongside the actual
-ROM binaries — the same layout openMSX ships and that this tool's target
-folder already uses.
+Downloaded configs are cached in `.openmsx_config_cache` next to the
+script, so re-runs work offline. Use `--refresh-cache` to pull the latest
+versions again.
 
 ## Usage
 
 ```bash
-python romsort.py --systemroms "F:\Shared Documents\openMSX\share\systemroms" --scan "C:\path\to\loose\roms"
+python romsort.py
 ```
 
 Options:
 
-- `--move` — move matched files instead of copying (default: copy, source
-  files are left untouched).
+- `--root PATH` — folder to scan (default: the folder this script lives in).
+- `--copy` — copy files instead of moving them (default: move).
 - `--dry-run` — preview what would happen without touching any files.
-- `--no-misc` — don't relocate unmatched files into `systemroms/misc`, just
-  report them.
+- `--refresh-cache` — force re-download of the config XML files from GitHub.
 
 Run with `--dry-run` first to review the plan before letting it touch files.
 
 ## Known limitation
 
-A handful of openMSX's shipped config XML files aren't strictly
-well-formed XML (e.g. a mismatched closing tag in
-`FAC_MIDI_Interface.xml`, or a tag name starting with a digit like
-`<3bitrgboutput/>` in `Fujitsu_FM-X.xml`). Files whose only matching config
-is one of these get skipped with a warning and won't be recognized until
-the XML is fixed upstream.
+A handful of openMSX's config XML files aren't strictly well-formed XML
+(e.g. a mismatched closing tag in `FAC_MIDI_Interface.xml`). Files whose
+only matching config is one of these get skipped with a warning and won't
+be recognized until the XML is fixed upstream.
