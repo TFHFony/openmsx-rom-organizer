@@ -49,9 +49,7 @@ Options:
 
 Run with `--dry-run` first to review the plan before letting it touch files.
 
-## Known limitation
+## Links
 
-A handful of openMSX's config XML files aren't strictly well-formed XML
-(e.g. a mismatched closing tag in `FAC_MIDI_Interface.xml`). Files whose
-only matching config is one of these get skipped with a warning and won't
-be recognized until the XML is fixed upstream.
+- https://www.file-hunter.com
+- https://www.arnauddeklerk.com
